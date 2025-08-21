@@ -1,10 +1,28 @@
 const fs = require('fs');
 const path = require('path');
 
+const baseHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Content-Type': 'application/json',
+};
+
 exports.handler = async function(event) {
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        ...baseHeaders,
+        'Access-Control-Allow-Methods': 'GET,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+      body: '',
+    };
+  }
+
   if (event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
+      headers: baseHeaders,
       body: JSON.stringify({ error: 'Method Not Allowed' }),
     };
   }
@@ -13,6 +31,7 @@ exports.handler = async function(event) {
   if (!vin) {
     return {
       statusCode: 400,
+      headers: baseHeaders,
       body: JSON.stringify({ error: 'VIN parameter is required' }),
     };
   }
@@ -23,13 +42,14 @@ exports.handler = async function(event) {
     const data = await fs.promises.readFile(reportPath, 'utf8');
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: baseHeaders,
       body: data,
     };
   } catch (err) {
     if (err.code === 'ENOENT') {
       return {
         statusCode: 404,
+        headers: baseHeaders,
         body: JSON.stringify({ error: 'Report not found' }),
       };
     }
@@ -37,6 +57,7 @@ exports.handler = async function(event) {
     console.error('Error reading report:', err);
     return {
       statusCode: 500,
+      headers: baseHeaders,
       body: JSON.stringify({ error: 'Internal Server Error' }),
     };
   }
