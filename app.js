@@ -1132,7 +1132,7 @@ class EventHandlers {
     
     static handleReportLinkClick(e) {
         e.preventDefault();
-        const section = e.target.dataset.section;
+        const section = e.currentTarget.dataset.section;
         if (section) {
             ModalManager.openModal(section);
         }
