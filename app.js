@@ -1311,3 +1311,7 @@ if (document.readyState === 'loading') {
 } else {
     App.init();
 }
+
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = { EventHandlers };
+}
