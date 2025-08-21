@@ -1,0 +1,12 @@
+{
+  "vehicle": "2021 Tesla Model 3 - VIN456",
+  "items": [
+    {
+      "category": "Battery",
+      "name": "Charge Level",
+      "status": "pass",
+      "notes": "Battery at 85% capacity.",
+      "photoUrl": ""
+    }
+  ]
+}
