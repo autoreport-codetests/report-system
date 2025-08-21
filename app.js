@@ -63,14 +63,16 @@ class ErrorHandler {
 
 // Loading indicator utility
 class LoadingIndicator {
-    static show() {
+    static show(message = 'Processing...') {
         const indicator = document.getElementById('loading-indicator');
         if (indicator) {
+            const text = indicator.querySelector('span');
+            if (text) text.textContent = message;
             indicator.classList.remove('hidden');
         }
         AppState.isLoading = true;
     }
-    
+
     static hide() {
         const indicator = document.getElementById('loading-indicator');
         if (indicator) {
@@ -241,6 +243,20 @@ class ChatManager {
 
 // Report data management with integrated checklist
 class ReportData {
+    // Vehicle information populated after loading report data
+    static vehicleInfo = {
+        make: '',
+        model: '',
+        year: '',
+        vin: '',
+        mileage: '',
+        inspectionDate: '',
+        exteriorColor: '',
+        interiorColor: '',
+        engine: '',
+        transmission: ''
+    };
+
     // Integrated checklist data
     static checklistData = {
         vehicle: "YEAR MAKE MODEL - VIN",
@@ -768,6 +784,15 @@ class ReportData {
         ]
     };
 
+    static update(data) {
+        if (data.vehicleInfo) {
+            this.vehicleInfo = { ...this.vehicleInfo, ...data.vehicleInfo };
+        }
+        if (data.items) {
+            this.checklistData.items = data.items;
+        }
+    }
+
     static getSectionData(section) {
         // Helper function to generate HTML for a list of checklist items
         const generateChecklistHTML = (items) => {
@@ -804,23 +829,24 @@ class ReportData {
 
         // Based on the section link clicked, build the modal content dynamically
         switch (section) {
-            case 'vehicle-summary':
+            case 'vehicle-summary': {
                 const summaryItems = this.checklistData.items.filter(item => item.category === "Initial Documentation & Overview");
+                const v = this.vehicleInfo;
                 return {
                     title: 'Vehicle Summary',
                     content: `
                         <div class="space-y-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg">
-                                <p><strong>Make:</strong> Honda</p>
-                                <p><strong>Model:</strong> OK V EX</p>
-                                <p><strong>Year:</strong> 2022</p>
-                                <p><strong>VIN:</strong> WEIOTTOCSME12SASG</p>
-                                <p><strong>Mileage:</strong> 20,300 miles</p>
-                                <p><strong>Exterior Color:</strong> Sonic Gray Pearl</p>
-                                <p><strong>Interior Color:</strong> Black</p>
-                                <p><strong>Engine:</strong> 1.5L Turbocharged I4</p>
-                                <p><strong>Transmission:</strong> CVT</p>
-                                <p><strong>Inspection Date:</strong> August 21, 2025</p>
+                                <p><strong>Make:</strong> ${v.make || ''}</p>
+                                <p><strong>Model:</strong> ${v.model || ''}</p>
+                                <p><strong>Year:</strong> ${v.year || ''}</p>
+                                <p><strong>VIN:</strong> ${v.vin || ''}</p>
+                                <p><strong>Mileage:</strong> ${v.mileage || ''}</p>
+                                <p><strong>Exterior Color:</strong> ${v.exteriorColor || ''}</p>
+                                <p><strong>Interior Color:</strong> ${v.interiorColor || ''}</p>
+                                <p><strong>Engine:</strong> ${v.engine || ''}</p>
+                                <p><strong>Transmission:</strong> ${v.transmission || ''}</p>
+                                <p><strong>Inspection Date:</strong> ${v.inspectionDate || ''}</p>
                             </div>
                             <div class="bg-blue-50 p-4 rounded-lg">
                                 <h4 class="font-bold text-blue-900 mb-2">Vehicle History Notes</h4>
@@ -832,6 +858,7 @@ class ReportData {
                         </div>
                     `
                 };
+            }
             case 'interior':
                 return {
                     title: 'Interior Inspection',
@@ -1233,6 +1260,7 @@ class App {
             await ReportService.loadReportData();
             this.setupEventListeners();
             this.setupAccessibility();
+            await this.loadReport();
             console.log('C.A.R.S. Vehicle Report Application initialized successfully');
         } catch (error) {
             ErrorHandler.showError('Failed to initialize application');
@@ -1297,11 +1325,40 @@ class App {
         // Error handling
         const errorCloseBtn = document.getElementById('error-close');
         if (errorCloseBtn) errorCloseBtn.addEventListener('click', EventHandlers.handleErrorClose);
-        
+
         // Make modal manager globally available for inline onclick attributes
         window.ModalManager = ModalManager;
     }
-    
+
+    static updateSummary() {
+        const v = ReportData.vehicleInfo;
+        const makeModelEl = document.getElementById('summary-make-model');
+        if (makeModelEl) makeModelEl.textContent = `${v.year} ${v.make} ${v.model}`.trim();
+        const vinEl = document.getElementById('summary-vin');
+        if (vinEl) vinEl.textContent = v.vin || '';
+        const mileageEl = document.getElementById('summary-mileage');
+        if (mileageEl) mileageEl.textContent = v.mileage || '';
+        const dateEl = document.getElementById('summary-date');
+        if (dateEl) dateEl.textContent = v.inspectionDate || '';
+    }
+
+    static async loadReport() {
+        try {
+            LoadingIndicator.show('Loading report...');
+            const params = new URLSearchParams(window.location.search);
+            const vin = params.get('vin') || 'vin123';
+            const response = await fetch(`${CONFIG.API_BASE_URL}/reports/${vin}`);
+            if (!response.ok) throw new Error('Failed to fetch report');
+            const data = await response.json();
+            ReportData.update(data);
+            this.updateSummary();
+        } catch (error) {
+            ErrorHandler.handleApiError(error);
+        } finally {
+            LoadingIndicator.hide();
+        }
+    }
+
     static setupAccessibility() {
         // Trap focus within the active modal
         document.addEventListener('keydown', (e) => {
