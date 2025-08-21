@@ -1000,6 +1000,40 @@ class ReportData {
     }
 }
 
+// Service for loading report data based on VIN
+class ReportService {
+    static getVin() {
+        const params = new URLSearchParams(window.location.search);
+        const vinFromUrl = params.get('vin');
+        if (vinFromUrl) return vinFromUrl.trim();
+
+        const vinInput = document.getElementById('vin-input');
+        if (vinInput && vinInput.value) return vinInput.value.trim();
+
+        return null;
+    }
+
+    static async loadReportData() {
+        const vin = this.getVin();
+        if (!vin) return;
+
+        try {
+            LoadingIndicator.show();
+            const response = await fetch(`${CONFIG.API_BASE_URL}/get-report?vin=${encodeURIComponent(vin)}`);
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.statusText}`);
+            }
+            const data = await response.json();
+            if (data.checklistData) ReportData.checklistData = data.checklistData;
+            if (data.photoData) ReportData.photoData = data.photoData;
+        } catch (error) {
+            ErrorHandler.handleApiError(error);
+        } finally {
+            LoadingIndicator.hide();
+        }
+    }
+}
+
 // Print functionality
 class PrintManager {
     static buildPrintableReport() {
@@ -1194,8 +1228,9 @@ class EventHandlers {
 
 // Initialize application
 class App {
-    static init() {
+    static async init() {
         try {
+            await ReportService.loadReportData();
             this.setupEventListeners();
             this.setupAccessibility();
             console.log('C.A.R.S. Vehicle Report Application initialized successfully');
