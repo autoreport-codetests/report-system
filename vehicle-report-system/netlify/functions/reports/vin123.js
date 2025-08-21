@@ -1,0 +1,6 @@
+const reportData = {
+    vehicle: "2023 Ford Bronco - VIN123",
+    items: [
+        { category: "Engine", name: "Oil Level", status: "pass", notes: "Level is full and clean.", photoUrl: "" }
+    ]
+};
