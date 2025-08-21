@@ -143,3 +143,9 @@ footer {
     color: var(--color-text-muted);
     font-size: 0.9rem;
 }
+
+@media print {
+    #print-area {
+        display: block;
+    }
+}
