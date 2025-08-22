@@ -1028,39 +1028,6 @@ class ReportData {
 }
 
 // Service for loading report data based on VIN
-class ReportService {
-    static getVin() {
-        const params = new URLSearchParams(window.location.search);
-        const vinFromUrl = params.get('vin');
-        if (vinFromUrl) return vinFromUrl.trim();
-
-        const vinInput = document.getElementById('vin-input');
-        if (vinInput && vinInput.value) return vinInput.value.trim();
-
-        return null;
-    }
-
-    static async loadReportData() {
-        const vin = this.getVin();
-        if (!vin) return;
-
-        try {
-            LoadingIndicator.show();
-            const response = await fetch(`${CONFIG.API_BASE_URL}/get-report?vin=${encodeURIComponent(vin)}`);
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.statusText}`);
-            }
-            const data = await response.json();
-            if (data.checklistData) ReportData.checklistData = data.checklistData;
-            if (data.photoData) ReportData.photoData = data.photoData;
-        } catch (error) {
-            ErrorHandler.handleApiError(error);
-        } finally {
-            LoadingIndicator.hide();
-        }
-    }
-}
-
 // Print functionality
 class PrintManager {
     static buildPrintableReport() {
@@ -1079,20 +1046,18 @@ class PrintManager {
             phone: '303-908-9815'
         };
         
-        const vehicleInfo = {
-            year: '2022',
-            make: 'Honda',
-            model: 'OK V EX',
-            vin: 'WEIOTTOCSME12SASG',
-            mileage: '20,300 miles'
-        };
-        
+        const vehicleInfo = ReportData.vehicleInfo;
+        const totalItems = ReportData.checklistData.items.length;
+        const itemsPassed = ReportData.checklistData.items.filter(i => i.status === 'good').length;
+        const attentionNeeded = ReportData.checklistData.items.filter(i => i.status === 'attention').length;
+        const immediateAction = ReportData.checklistData.items.filter(i => i.status === 'immediate').length;
+        const score = totalItems ? ((itemsPassed / totalItems) * 10).toFixed(1) : 0;
         const reportSummary = {
-            date: 'August 21, 2025',
-            score: 8.5,
-            itemsPassed: 42,
-            attentionNeeded: 8,
-            immediateAction: 2
+            date: vehicleInfo.inspectionDate || '',
+            score,
+            itemsPassed,
+            attentionNeeded,
+            immediateAction
         };
         
         const headerHTML = `
@@ -1144,18 +1109,18 @@ class PrintManager {
 // Email functionality
 class EmailManager {
     static openEmailClient() {
-        const vehicleInfo = {
-            year: '2022',
-            make: 'Honda',
-            model: 'OK V EX'
-        };
-        
+        const vehicleInfo = ReportData.vehicleInfo;
+        const totalItems = ReportData.checklistData.items.length;
+        const itemsPassed = ReportData.checklistData.items.filter(i => i.status === 'good').length;
+        const attentionNeeded = ReportData.checklistData.items.filter(i => i.status === 'attention').length;
+        const immediateAction = ReportData.checklistData.items.filter(i => i.status === 'immediate').length;
+        const score = totalItems ? ((itemsPassed / totalItems) * 10).toFixed(1) : 0;
         const reportSummary = {
-            date: 'August 21, 2025',
-            score: 8.5,
-            itemsPassed: 42,
-            attentionNeeded: 8,
-            immediateAction: 2
+            date: vehicleInfo.inspectionDate || '',
+            score,
+            itemsPassed,
+            attentionNeeded,
+            immediateAction
         };
         
         const companyInfo = {
@@ -1257,7 +1222,6 @@ class EventHandlers {
 class App {
     static async init() {
         try {
-            await ReportService.loadReportData();
             this.setupEventListeners();
             this.setupAccessibility();
             await this.loadReport();
@@ -1332,14 +1296,23 @@ class App {
 
     static updateSummary() {
         const v = ReportData.vehicleInfo;
+        const makeModel = `${v.year} ${v.make} ${v.model}`.trim();
+
         const makeModelEl = document.getElementById('summary-make-model');
-        if (makeModelEl) makeModelEl.textContent = `${v.year} ${v.make} ${v.model}`.trim();
+        if (makeModelEl) makeModelEl.textContent = makeModel;
         const vinEl = document.getElementById('summary-vin');
         if (vinEl) vinEl.textContent = v.vin || '';
         const mileageEl = document.getElementById('summary-mileage');
         if (mileageEl) mileageEl.textContent = v.mileage || '';
         const dateEl = document.getElementById('summary-date');
         if (dateEl) dateEl.textContent = v.inspectionDate || '';
+
+        const headerModelEl = document.getElementById('header-vehicle-model');
+        if (headerModelEl) headerModelEl.textContent = makeModel;
+        const headerVinEl = document.getElementById('header-vehicle-vin');
+        if (headerVinEl) headerVinEl.textContent = `VIN: ${v.vin || ''}`;
+        const headerDateEl = document.getElementById('header-vehicle-date');
+        if (headerDateEl) headerDateEl.textContent = `Inspection: ${v.inspectionDate || ''}`;
     }
 
     static async loadReport() {
@@ -1347,7 +1320,7 @@ class App {
             LoadingIndicator.show('Loading report...');
             const params = new URLSearchParams(window.location.search);
             const vin = params.get('vin') || 'vin123';
-            const response = await fetch(`${CONFIG.API_BASE_URL}/reports/${vin}`);
+            const response = await fetch(`${CONFIG.API_BASE_URL}/get-report?vin=${encodeURIComponent(vin)}`);
             if (!response.ok) throw new Error('Failed to fetch report');
             const data = await response.json();
             ReportData.update(data);
