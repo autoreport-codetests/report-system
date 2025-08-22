@@ -1,4 +1,4 @@
-const reportData = {
+module.exports = {
     vehicleInfo: {
         make: "Honda",
         model: "OK V EX",
@@ -10,12 +10,10 @@ const reportData = {
         interiorColor: "Black",
         engine: "1.5L Turbocharged I4",
         transmission: "CVT"
-    }
-};
-
-exports.handler = async () => {
-    return {
-        statusCode: 200,
-        body: JSON.stringify(reportData)
-    };
+    },
+    checklistData: {
+        vehicle: "2022 Honda OK V EX - WEIOTTOCSME12SASG",
+        items: []
+    },
+    photoData: {}
 };
