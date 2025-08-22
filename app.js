@@ -1380,5 +1380,11 @@ if (typeof process === 'undefined' || process.env.NODE_ENV !== 'test') {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-    module.exports = { EventHandlers };
+    module.exports = {
+        EventHandlers,
+        ErrorHandler,
+        LoadingIndicator,
+        ApiService,
+        ChatManager
+    };
 }
