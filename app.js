@@ -1397,11 +1397,13 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
 });
 
-// Initialize app when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => App.init());
-} else {
-    App.init();
+// Initialize app when DOM is ready (skip during tests)
+if (typeof process === 'undefined' || process.env.NODE_ENV !== 'test') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    } else {
+        App.init();
+    }
 }
 
 if (typeof module !== "undefined" && module.exports) {
