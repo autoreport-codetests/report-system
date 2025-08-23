@@ -123,6 +123,26 @@ class ApiService {
             LoadingIndicator.hide();
         }
     }
+
+    static async explainIssue(part) {
+        try {
+            LoadingIndicator.show();
+            const response = await this.fetchWithRetry(`${CONFIG.API_BASE_URL}/get-explanation`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ part })
+            });
+
+            const data = await response.json();
+            return data.explanation;
+
+        } catch (error) {
+            ErrorHandler.handleApiError(error);
+            return 'Explanation not available at this time.';
+        } finally {
+            LoadingIndicator.hide();
+        }
+    }
 }
 
 // Modal management
@@ -813,8 +833,13 @@ class ReportData {
         // Helper function to generate HTML for a list of checklist items
         const generateChecklistHTML = (items) => {
             return items.map(item => {
-                // Map 'good' status to 'pass' for styling. Add other mappings if needed.
-                const status = item.status === 'good' ? 'pass' : 'attention';
+                // Map raw item statuses to our display statuses
+                const statusMap = {
+                    good: 'pass',
+                    attention: 'attention',
+                    immediate: 'immediate'
+                };
+                const status = statusMap[item.status] || 'attention';
                 // Prepare photos if a URL exists
                 const photos = item.photoUrl ? [{ url: item.photoUrl, caption: item.name }] : [];
                 // Use the existing generator function with the checklist data
@@ -946,9 +971,9 @@ class ReportData {
         const statusClasses = {
             pass: { bg: 'bg-green-100', text: 'text-green-800', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
             attention: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
-            action: { bg: 'bg-red-100', text: 'text-red-800', icon: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }
+            immediate: { bg: 'bg-red-100', text: 'text-red-800', icon: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }
         };
-        
+
         const s = statusClasses[status] || statusClasses['attention']; // Default to 'attention' if status is unknown
         
         let detailsHtml = '';
@@ -983,6 +1008,11 @@ class ReportData {
                 </div>
             `;
         }
+
+        let explainButton = '';
+        if (status === 'attention' || status === 'immediate') {
+            explainButton = `<button class="mt-2 text-xs underline text-blue-800 explain-btn" data-part="${title}">Explain It</button>`;
+        }
         
         return `
             <div class="${s.bg} ${s.text} p-4 rounded-lg">
@@ -995,6 +1025,8 @@ class ReportData {
                         <p class="text-sm">${description}</p>
                         ${detailsHtml}
                         ${photosHtml}
+                        ${explainButton}
+                        <div class="explanation text-sm mt-2 hidden"></div>
                     </div>
                 </div>
             </div>
@@ -1215,12 +1247,12 @@ class EventHandlers {
     static handleEmailClick() {
         EmailManager.openEmailClient();
     }
-    
+
     static handleKeydown(e) {
         if (e.key === 'Escape') {
             const modalOverlay = document.getElementById('modal-overlay');
             const photoModalOverlay = document.getElementById('photo-modal-overlay');
-            
+
             if (modalOverlay && modalOverlay.classList.contains('active')) {
                 ModalManager.closeModal();
             } else if (photoModalOverlay && photoModalOverlay.classList.contains('active')) {
@@ -1228,9 +1260,28 @@ class EventHandlers {
             }
         }
     }
-    
+
     static handleErrorClose() {
         ErrorHandler.hideError();
+    }
+
+    static async handleExplainClick(e) {
+        const btn = e.target.closest('.explain-btn');
+        if (!btn) return;
+        const part = btn.dataset.part;
+        const container = btn.nextElementSibling;
+        if (!part || !container) return;
+
+        btn.disabled = true;
+        try {
+            const explanation = await ApiService.explainIssue(part);
+            container.textContent = explanation;
+            container.classList.remove('hidden');
+        } catch (error) {
+            ErrorHandler.showError('Failed to get explanation');
+        } finally {
+            btn.disabled = false;
+        }
     }
 }
 
@@ -1367,6 +1418,7 @@ class App {
         
         // Global event listeners
         document.addEventListener('keydown', EventHandlers.handleKeydown);
+        document.addEventListener('click', EventHandlers.handleExplainClick);
         
         // Error handling
         const errorCloseBtn = document.getElementById('error-close');
