@@ -149,3 +149,59 @@ footer {
         display: block;
     }
 }
+
+/* Mobile phones */
+@media (max-width: 480px) {
+    body {
+        padding: 0.5rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    .card {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .item-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}
+
+/* Foldable devices and small tablets */
+@media (min-width: 481px) and (max-width: 768px) {
+    body {
+        padding: 1rem;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    .card {
+        padding: 1.25rem;
+    }
+}
+
+/* Ultra-wide screens */
+@media (min-width: 1536px) {
+    body {
+        padding: 2rem 3rem;
+    }
+
+    .container {
+        max-width: 1500px;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+    }
+
+    .card {
+        padding: 2rem;
+    }
+}
