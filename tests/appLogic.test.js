@@ -40,6 +40,19 @@ describe('ErrorHandler', () => {
     expect(spy).toHaveBeenCalledWith('The requested resource was not found.');
     spy.mockRestore();
   });
+
+  test('showError resets existing timeout', () => {
+    jest.useFakeTimers();
+    ErrorHandler.showError('first', 1000);
+    jest.advanceTimersByTime(500);
+    ErrorHandler.showError('second', 1000);
+    jest.advanceTimersByTime(500);
+    const boundary = document.getElementById('error-boundary');
+    expect(boundary.classList.contains('hidden')).toBe(false);
+    jest.advanceTimersByTime(500);
+    expect(boundary.classList.contains('hidden')).toBe(true);
+    jest.useRealTimers();
+  });
 });
 
 describe('ApiService.generateResponse', () => {
@@ -75,6 +88,29 @@ describe('ApiService.generateResponse', () => {
     const result = await ApiService.generateResponse('hi');
     expect(ErrorHandler.handleApiError).toHaveBeenCalled();
     expect(result).toBe('Sorry, I encountered an error while processing your request. Please try again.');
+  });
+});
+
+describe('ApiService.fetchWithRetry', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test('retries the specified number of times', async () => {
+    const error = new Error('fail');
+    global.fetch = jest.fn().mockRejectedValue(error);
+    await expect(ApiService.fetchWithRetry('/url', {}, 3, 10)).rejects.toThrow('fail');
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  test('resolves when a retry succeeds', async () => {
+    const success = { ok: true };
+    global.fetch = jest.fn()
+      .mockRejectedValueOnce(new Error('fail'))
+      .mockResolvedValue(success);
+    const res = await ApiService.fetchWithRetry('/url', {}, 3, 10);
+    expect(res).toBe(success);
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
 

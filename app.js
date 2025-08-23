@@ -19,19 +19,23 @@ const AppState = {
 
 // Error handling utility
 class ErrorHandler {
+    static timeoutId = null;
+
     static showError(message, duration = 5000) {
         const errorBoundary = document.getElementById('error-boundary');
         const errorMessage = document.getElementById('error-message');
-        
+
         if (errorBoundary && errorMessage) {
             errorMessage.textContent = message;
             errorBoundary.classList.remove('hidden');
-            
-            setTimeout(() => {
+
+            if (this.timeoutId) clearTimeout(this.timeoutId);
+            this.timeoutId = setTimeout(() => {
                 this.hideError();
+                this.timeoutId = null;
             }, duration);
         }
-        
+
         console.error('Application Error:', message);
     }
     
@@ -84,18 +88,30 @@ class LoadingIndicator {
 
 // API service
 class ApiService {
+    static async fetchWithRetry(url, options = {}, retries = CONFIG.MAX_RETRIES, timeout = CONFIG.TIMEOUT) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(timer);
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                return response;
+            } catch (error) {
+                clearTimeout(timer);
+                if (attempt === retries) throw error;
+            }
+        }
+    }
+
     static async generateResponse(prompt, sectionData) {
         try {
             LoadingIndicator.show();
-            const response = await fetch(`${CONFIG.API_BASE_URL}/get-ai-summary`, {
+            const response = await this.fetchWithRetry(`${CONFIG.API_BASE_URL}/get-ai-summary`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt, sectionData })
             });
-
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.statusText}`);
-            }
 
             const data = await response.json();
             return data.reply;
