@@ -1233,6 +1233,72 @@ class App {
     }
     
     static setupEventListeners() {
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mainNavigation = document.getElementById('main-navigation');
+        
+        if (mobileMenuButton && mainNavigation) {
+            // Create mobile menu overlay
+            const mobileMenuOverlay = document.createElement('div');
+            mobileMenuOverlay.id = 'mobile-menu-overlay';
+            mobileMenuOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden transition-opacity duration-300 opacity-0 pointer-events-none';
+            document.body.appendChild(mobileMenuOverlay);
+            
+            // Toggle menu function
+            const toggleMenu = (show) => {
+                const isOpening = show === undefined ? !mainNavigation.classList.contains('translate-x-0') : show;
+                
+                if (isOpening) {
+                    // Show menu
+                    document.body.style.overflow = 'hidden';
+                    mobileMenuOverlay.classList.remove('pointer-events-none');
+                    mobileMenuOverlay.classList.add('opacity-100');
+                    mainNavigation.classList.remove('hidden');
+                    mainNavigation.classList.add('translate-x-0');
+                    mainNavigation.classList.remove('translate-x-full');
+                } else {
+                    // Hide menu
+                    mobileMenuOverlay.classList.add('opacity-0', 'pointer-events-none');
+                    mainNavigation.classList.add('translate-x-full');
+                    mainNavigation.classList.remove('translate-x-0');
+                    document.body.style.overflow = '';
+                    
+                    // Wait for transition to complete before hiding
+                    setTimeout(() => {
+                        if (mainNavigation.classList.contains('translate-x-full')) {
+                            mainNavigation.classList.add('hidden');
+                        }
+                    }, 300);
+                }
+                
+                // Toggle menu icon
+                const menuIcon = mobileMenuButton.querySelector('svg');
+                if (menuIcon) {
+                    menuIcon.innerHTML = isOpening 
+                        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />' // X icon
+                        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />'; // Hamburger icon
+                }
+            };
+            
+            // Toggle menu on button click
+            mobileMenuButton.addEventListener('click', () => toggleMenu());
+            
+            // Close menu when clicking overlay
+            mobileMenuOverlay.addEventListener('click', () => toggleMenu(false));
+            
+            // Close menu when clicking a nav link
+            mainNavigation.querySelectorAll('.report-link').forEach(link => {
+                link.addEventListener('click', () => toggleMenu(false));
+            });
+            
+            // Close menu when pressing Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !mainNavigation.classList.contains('hidden')) {
+                    toggleMenu(false);
+                }
+            });
+        }
+        
         // Report section links
         document.querySelectorAll('.report-link').forEach(link => {
             link.addEventListener('click', EventHandlers.handleReportLinkClick);
