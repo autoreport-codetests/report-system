@@ -21,6 +21,7 @@ body {
 .container {
     max-width: 800px;
     margin: 0 auto;
+    padding: 0 1rem;
 }
 
 header {
@@ -142,6 +143,50 @@ footer {
     margin-top: 2rem;
     color: var(--color-text-muted);
     font-size: 0.9rem;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 640px) {
+    body {
+        padding: 0.5rem;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+    }
+
+    .card {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .item-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1200px;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+    }
+
+    h2 {
+        font-size: 1.75rem;
+    }
+
+    .card {
+        padding: 2rem;
+    }
 }
 
 @media print {
