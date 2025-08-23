@@ -114,6 +114,38 @@ describe('ApiService.fetchWithRetry', () => {
   });
 });
 
+describe('ApiService.explainIssue', () => {
+  beforeEach(() => {
+    jest.spyOn(LoadingIndicator, 'show').mockImplementation(() => {});
+    jest.spyOn(LoadingIndicator, 'hide').mockImplementation(() => {});
+    jest.spyOn(ErrorHandler, 'handleApiError').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test('returns explanation on success', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ explanation: 'Brake pads slow the car.' })
+    });
+
+    const result = await ApiService.explainIssue('Brake pad');
+    expect(result).toBe('Brake pads slow the car.');
+    expect(fetch).toHaveBeenCalled();
+    expect(LoadingIndicator.show).toHaveBeenCalled();
+    expect(LoadingIndicator.hide).toHaveBeenCalled();
+  });
+
+  test('handles fetch error and returns fallback', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false });
+    const result = await ApiService.explainIssue('Brake pad');
+    expect(ErrorHandler.handleApiError).toHaveBeenCalled();
+    expect(result).toBe('Explanation not available at this time.');
+  });
+});
+
 describe('ChatManager', () => {
   test('reports missing container', async () => {
     const spy = jest.spyOn(ErrorHandler, 'showError').mockImplementation(() => {});
