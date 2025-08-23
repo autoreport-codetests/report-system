@@ -355,10 +355,32 @@
                 min-height: 48px;
                 font-size: 16px;
             }
-            
+
             .modal-container {
                 max-width: 95vw;
                 max-height: 95vh;
+            }
+        }
+
+        /* Large screen enhancements */
+        @media (min-width: 1024px) {
+            .modal-container {
+                max-width: 800px;
+                max-height: 80vh;
+            }
+
+            .chat-container {
+                max-height: 400px;
+            }
+
+            .chat-messages {
+                max-height: 320px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chat-messages {
+                padding: 12px;
             }
         }
     </style>
