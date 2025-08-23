@@ -1243,11 +1243,11 @@ class App {
             mobileMenuOverlay.id = 'mobile-menu-overlay';
             mobileMenuOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden transition-opacity duration-300 opacity-0 pointer-events-none';
             document.body.appendChild(mobileMenuOverlay);
-            
+
             // Toggle menu function
             const toggleMenu = (show) => {
                 const isOpening = show === undefined ? !mainNavigation.classList.contains('translate-x-0') : show;
-                
+
                 if (isOpening) {
                     // Show menu
                     document.body.style.overflow = 'hidden';
@@ -1262,7 +1262,7 @@ class App {
                     mainNavigation.classList.add('translate-x-full');
                     mainNavigation.classList.remove('translate-x-0');
                     document.body.style.overflow = '';
-                    
+
                     // Wait for transition to complete before hiding
                     setTimeout(() => {
                         if (mainNavigation.classList.contains('translate-x-full')) {
@@ -1270,16 +1270,17 @@ class App {
                         }
                     }, 300);
                 }
-                
-                // Toggle menu icon
+
+                // Toggle menu icon and accessibility attributes
                 const menuIcon = mobileMenuButton.querySelector('svg');
                 if (menuIcon) {
-                    menuIcon.innerHTML = isOpening 
+                    menuIcon.innerHTML = isOpening
                         ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />' // X icon
                         : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />'; // Hamburger icon
                 }
+                mobileMenuButton.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
             };
-            
+
             // Toggle menu on button click
             mobileMenuButton.addEventListener('click', () => toggleMenu());
             
@@ -1290,11 +1291,25 @@ class App {
             mainNavigation.querySelectorAll('.report-link').forEach(link => {
                 link.addEventListener('click', () => toggleMenu(false));
             });
-            
+
             // Close menu when pressing Escape key
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && !mainNavigation.classList.contains('hidden')) {
                     toggleMenu(false);
+                }
+            });
+
+            // Reset menu state on resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 640) {
+                    mobileMenuOverlay.classList.add('opacity-0', 'pointer-events-none');
+                    mainNavigation.classList.remove('hidden', 'translate-x-full', 'translate-x-0');
+                    document.body.style.overflow = '';
+                    mobileMenuButton.setAttribute('aria-expanded', 'false');
+                    const menuIcon = mobileMenuButton.querySelector('svg');
+                    if (menuIcon) {
+                        menuIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />';
+                    }
                 }
             });
         }
@@ -1451,6 +1466,7 @@ if (typeof module !== "undefined" && module.exports) {
         ErrorHandler,
         LoadingIndicator,
         ApiService,
-        ChatManager
+        ChatManager,
+        App
     };
 }
